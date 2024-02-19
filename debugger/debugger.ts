@@ -987,21 +987,32 @@ export namespace Debugger {
     function breakForError(err: unknown, level: number, propagate: true): never;
     function breakForError(err: unknown, level?: number, propagate?: false): void;
     function breakForError(err: unknown, level?: number, propagate?: boolean) {
-        const message = mapSources(tostring(err));
+        let message;
+        let kristalClassLoaderErrorTreatment = type(err) == "table" && err.included; // dobby
+        if (kristalClassLoaderErrorTreatment) {
+            message = mapSources(err.msg);
+            (err as LuaTable<string, any>).msg = message;
+        } else {
+            message = mapSources(tostring(err));
+        }
         level = (level ?? 1) + 1;
 
-        if (skipNextBreak) {
-            skipNextBreak = false;
-
-        } else if (!inDebugBreak) {
-            const thread = getActiveThread();
-            Send.debugBreak(message, "error", getThreadId(thread));
-            debugBreak(thread, level);
+        /* dobby: make the debugger shut up about class load failures; if it fails
+           miserably there will be another screen */
+        if (!kristalClassLoaderErrorTreatment) {
+            if (skipNextBreak) {
+                skipNextBreak = false;
+            } else if (!inDebugBreak) {
+                const thread = getActiveThread();
+                Send.debugBreak(message, "error", getThreadId(thread));
+                debugBreak(thread, level);
+            }
         }
 
         if (propagate) {
             skipNextBreak = true;
-            luaError(message, level);
+            // dobby: we'll need to give Kristal the original table for its own purposes
+            luaError(kristalClassLoaderErrorTreatment ? err : message, level);
         }
     }
 
