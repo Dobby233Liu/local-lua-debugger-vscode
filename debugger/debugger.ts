@@ -988,7 +988,7 @@ export namespace Debugger {
     function breakForError(err: unknown, level?: number, propagate?: false): void;
     function breakForError(err: unknown, level?: number, propagate?: boolean) {
         let message;
-        let kristalClassLoaderErrorTreatment = type(err) == "table" && err.included; // dobby
+        let kristalClassLoaderErrorTreatment = typeof err == "object" && err.included; // dobby
         if (kristalClassLoaderErrorTreatment) {
             message = mapSources(err.msg);
             (err as LuaTable<string, any>).msg = message;
