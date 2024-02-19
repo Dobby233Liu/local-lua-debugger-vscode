@@ -984,14 +984,16 @@ export namespace Debugger {
         return str;
     }
 
-    function breakForError(err: LuaTable<string, any> | unknown, level: number, propagate: true): never;
-    function breakForError(err: LuaTable<string, any> | unknown, level?: number, propagate?: false): void;
-    function breakForError(err: LuaTable<string, any> | unknown, level?: number, propagate?: boolean) {
+    function breakForError(err: LuaTable<string, string> | unknown, level: number, propagate: true): never;
+    function breakForError(err: LuaTable<string, string> | unknown, level?: number, propagate?: false): void;
+    function breakForError(err: LuaTable<string, string> | unknown, level?: number, propagate?: boolean) {
         let message;
-        let kristalClassLoaderErrorTreatment = err && type(err) == "table" && (err as LuaTable<string, any>).get("included"); // dobby
-        if (kristalClassLoaderErrorTreatment) {
-            message = mapSources((err as LuaTable<string, any>).get("msg"));
-            (err as LuaTable<string, any>).set("msg", message);
+        const kristalClassGetterErr
+            = err && type(err) === "table"
+                && (err as LuaTable<string, string>).get("included"); // dobby
+        if (kristalClassGetterErr) {
+            message = mapSources((err as LuaTable<string, string>).get("msg"));
+            (err as LuaTable<string, string>).set("msg", message);
         } else {
             message = mapSources(tostring(err));
         }
@@ -999,7 +1001,7 @@ export namespace Debugger {
 
         /* dobby: make the debugger shut up about class load failures; if it fails
            miserably there will be another screen */
-        if (!kristalClassLoaderErrorTreatment) {
+        if (!kristalClassGetterErr) {
             if (skipNextBreak) {
                 skipNextBreak = false;
             } else if (!inDebugBreak) {
@@ -1012,7 +1014,7 @@ export namespace Debugger {
         if (propagate) {
             skipNextBreak = true;
             // dobby: we'll need to give Kristal the original table for its own purposes
-            luaError(kristalClassLoaderErrorTreatment ? err as string : message, level);
+            luaError(kristalClassGetterErr ? err as string : message, level);
         }
     }
 
