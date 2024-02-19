@@ -37,12 +37,15 @@ if (io.stderr) {
     io.stderr.setvbuf("no");
 }
 
+let breaked = false;
+
 //Start debugger globally
 export function start(breakImmediately?: boolean): void {
     if (breakImmediately === undefined) {
-        breakImmediately = (os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") === "1");
+        breakImmediately = (os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") === "1") && !breaked;
     }
     Debugger.debugGlobal(breakImmediately);
+    breaked = true;
 }
 
 //Stop debugging currently debugged function
