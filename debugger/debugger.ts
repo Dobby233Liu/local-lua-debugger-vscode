@@ -984,14 +984,14 @@ export namespace Debugger {
         return str;
     }
 
-    function breakForError(err: unknown, level: number, propagate: true): never;
-    function breakForError(err: unknown, level?: number, propagate?: false): void;
-    function breakForError(err: unknown, level?: number, propagate?: boolean) {
+    function breakForError(err: LuaTable<string, any> | unknown, level: number, propagate: true): never;
+    function breakForError(err: LuaTable<string, any> | unknown, level?: number, propagate?: false): void;
+    function breakForError(err: LuaTable<string, any> | unknown, level?: number, propagate?: boolean) {
         let message;
-        let kristalClassLoaderErrorTreatment = typeof err == "object" && err.included; // dobby
+        let kristalClassLoaderErrorTreatment = err && type(err) == "table" && (err as LuaTable<string, any>).get("included"); // dobby
         if (kristalClassLoaderErrorTreatment) {
-            message = mapSources(err.msg);
-            (err as LuaTable<string, any>).msg = message;
+            message = mapSources((err as LuaTable<string, any>).get("msg"));
+            (err as LuaTable<string, any>).set("msg", message);
         } else {
             message = mapSources(tostring(err));
         }
@@ -1012,7 +1012,7 @@ export namespace Debugger {
         if (propagate) {
             skipNextBreak = true;
             // dobby: we'll need to give Kristal the original table for its own purposes
-            luaError(kristalClassLoaderErrorTreatment ? err : message, level);
+            luaError(kristalClassLoaderErrorTreatment ? err as string : message, level);
         }
     }
 
